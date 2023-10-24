@@ -1,0 +1,53 @@
+name: Running unit tests PHP
+on:
+  workflow_call:
+    inputs:
+      php_version:
+        description: 'Which php version do you want to run tests'
+        required: true
+        type: string
+      working_dir:
+        description: 'Which working_dir do you want to run tests'
+        required: true
+        type: string
+
+jobs:
+  test-php:
+    name: Running test PHP
+    runs-on: prod-dump-deployer
+
+    steps:
+      - name: test
+        run: /usr/bin/mkdir -p test
+
+      - uses: actions/checkout@v3
+        with:
+          path: 'test'
+
+      - name: Copy .env
+        working-directory: 'test'
+        run:  docker run -v ./:${{ inputs.working_dir }} dumptec/php-fpm:dev-${{ inputs.php_version }}-latest php -r "file_exists('.env') || copy('.env.example', '.env');"
+
+      - name: Install Dependencies
+        working-directory: 'test'
+        run: docker run -v ./:${{ inputs.working_dir }} dumptec/php-fpm:dev-${{ inputs.php_version }}-latest composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+
+      - name: Generate key
+        working-directory: 'test'
+        run: docker run -v ./:${{ inputs.working_dir }} dumptec/php-fpm:dev-${{ inputs.php_version }}-latest php artisan key:generate
+
+      - name: Execute composer lint-check
+        working-directory: 'test'
+        run: docker run -v ./:${{ inputs.working_dir }} dumptec/php-fpm:dev-${{ inputs.php_version }}-latest composer lint-check
+
+      - name: Execute pint-check
+        working-directory: 'test'
+        run: docker run -v ./:${{ inputs.working_dir }} dumptec/php-fpm:dev-${{ inputs.php_version }}-latest composer pint-check
+
+      - name: Execute phpstan-check
+        working-directory: 'test'
+        run: docker run -v ./:${{ inputs.working_dir }} dumptec/php-fpm:dev-${{ inputs.php_version }}-latest composer phpstan-check
+
+      - name: Execute php unit test
+        working-directory: 'test'
+        run: docker run -v ./:${{ inputs.working_dir }} dumptec/php-fpm:prod-${{ inputs.php_version }}-latest ./vendor/bin/paratest --processes 1 --order-by=defects --stop-on-defect
