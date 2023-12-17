@@ -17,13 +17,6 @@ jobs:
     runs-on: prod-dump-deployer
 
     steps:
-      - name: test
-        run: /usr/bin/mkdir -p test
-
-      - uses: actions/checkout@v3
-        with:
-          path: 'test'
-
       - name: Execute php unit test
         working-directory: 'test'
         run: docker run -v ./:${{ inputs.working_dir }} dumptec/php-fpm:prod-${{ inputs.php_version }}-latest ./vendor/bin/paratest --processes 1 --order-by=defects --stop-on-defect
