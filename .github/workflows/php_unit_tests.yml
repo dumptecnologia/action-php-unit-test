@@ -10,13 +10,16 @@ on:
         description: 'Which working_dir do you want to run tests'
         required: true
         type: string
+      working_test_dir:
+        description: 'Which working_test_dir do you want to run tests'
+        required: true
+        type: string
 
 jobs:
   test-php:
     name: Running test PHP
     runs-on: prod-dump-deployer
-
     steps:
       - name: Execute php unit test
-        working-directory: 'test'
+        working-directory: ${{ inputs.working_test_dir }}
         run: docker run -v ./:${{ inputs.working_dir }} dumptec/php-fpm:prod-${{ inputs.php_version }}-latest ./vendor/bin/paratest --processes 1 --order-by=defects --stop-on-defect
